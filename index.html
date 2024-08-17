@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Игровой вызов - Результаты игрока</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style id="dynamic-styles">
+        :root {
+            --background-color: #1c1c1c;
+            --text-color: #e0e0e0;
+            --highlight-color: #FF6347;
+            --table-bg-color: #2e2e2e;
+            --table-border-color: #3d3d3d;
+            --label-color: #b0b0b0;
+            --table-text-color: #FFFFFF;
+            --box-shadow-color: rgba(0, 0, 0, 0.5);
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .widget {
+            width: 300px;
+            background-color: var(--table-bg-color);
+            padding: 15px;
+            box-sizing: border-box;
+            border: 2px solid var(--highlight-color);
+            border-radius: 10px;
+            box-shadow: 0 0 10px var(--box-shadow-color);
+            overflow-y: auto;
+        }
+
+        .highlight {
+            color: var(--highlight-color);
+        }
+
+        .loader {
+            border: 4px solid rgba(243, 243, 243, 0.2);
+            border-radius: 50%;
+            border-top: 4px solid var(--highlight-color);
+            width: 25px;
+            height: 25px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .player-data {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .player-data-item {
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .label {
+            font-weight: bold;
+        }
+
+        .experience-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(5, auto);
+            gap: 3px;
+            background-color: var(--table-bg-color);
+            border: 1px solid var(--table-border-color); 
+            padding: 5px;
+            border-radius: 5px; 
+            margin-bottom: 8px; 
+            color: white;
+            font-weight: bold;
+        }
+
+        .experience-item {
+            font-family: 'Roboto', sans-serif;
+            padding: 3px;
+            background-color: var(--highlight-color); 
+            border-radius: 3px; 
+            text-align: center;
+            font-weight: bolder;
+            font-size: 14px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale; 
+            color: var(--table-text-color);
+        }
+
+        .error {
+            color: var(--highlight-color);
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .color-picker {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .color-picker label {
+            font-weight: bold;
+        }
+
+        .hidden {
+            display: none;
+        }
+		
+		button {
+            width: 100%;
+		}
+		
+		.playerinput
+		{
+		width: 103.2px;
+		}
+		
+		.support-section {
+            text-align: center;
+            margin-top: 20px;
+        }
+		
+		/* Стили для ссылки */
+.instruction-link {
+    color: var(--highlight-color);
+    text-decoration: underline;
+    cursor: pointer;
+    position: relative;
+}
+
+/* Стили для блока с изображением */
+.tooltip-link {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip-image {
+    visibility: hidden;
+    width: 400px; /* Ширина изображения */
+    background-color: var(--table-bg-color);
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 100%; /* Позиция всплывающего изображения относительно ссылки */
+    left: 50%;
+    margin-left: -200px; /* Сместить по центру */
+    box-shadow: 0 0 10px var(--box-shadow-color);
+}
+
+.tooltip-image img {
+    width: 100%; /* Ширина изображения внутри блока */
+    height: auto;
+    border-radius: 5px;
+}
+
+/* Показать изображение при наведении */
+.tooltip-link:hover .tooltip-image {
+    visibility: visible;
+}
+	
+    </style>
+</head>
+<body>
+<div class="widget" id="widget">
+    <div id="loader" class="loader"></div>
+    <div id="content" style="display: none;">
+        <select id="tournamentSelect">
+            <option value="" selected disabled hidden>Выберите турнир</option>
+        </select>
+        <input type="text" id="playerNameInput" class="playerinput" placeholder="Введите ник игрока" />
+        <button id="searchButton">Поиск игрока</button>
+        <div id="error" class="error"></div>
+        <div class="color-picker hidden">
+            <label for="tableBgColorPicker">Изменить цвет фона виджета:</label>
+            <input type="color" id="tableBgColorPicker" value="#2e2e2e">
+        </div>
+        <div class="color-picker hidden">
+            <label for="textColorPicker">Изменить цвет текста:</label>
+            <input type="color" id="textColorPicker" value="#e0e0e0">
+        </div>
+        <div class="color-picker hidden">
+            <label for="highlightColorPicker">Изменить цвет текста ключевых значений:</label>
+            <input type="color" id="highlightColorPicker" value="#FF6347">
+        </div>
+        <div class="color-picker hidden">
+            <label for="tableTextColorPicker">Цвет исторических значений:</label>
+            <input type="color" id="tableTextColorPicker" value="#FFFFFF">
+        </div>
+        <div id="playerData" class="hidden"></div>
+        <button id="savePageButton" class="hidden">Сгенерировать виджет-страницу для OBS</button>
+	</div>
+
+	 <div class="support-section">
+	 <a href="#"  class="hidden" onclick="window.open('https://koreanrandom.com/forum/uploads/monthly_2024_07/672611821_.png.88c61269db62fe31f39335fa6c1f30ca.png', 'popup', 'width=800,height=600'); return false;">Инструкция по добавлению виджета</a>
+     <br>
+	 <a href ="https://yoomoney.ru/fundraise/14M2GBPGFQI.240817">Поддержать проект </a>
+	 </div>
+</div>
+        <script>
+			function saveSettings() {
+				const settings = {
+					textColor: document.getElementById('textColorPicker').value,
+					highlightColor: document.getElementById('highlightColorPicker').value,
+					tableBgColor: document.getElementById('tableBgColorPicker').value,
+					tableTextColor: document.getElementById('tableTextColorPicker').value,
+				};
+
+				localStorage.setItem('widgetSettings', JSON.stringify(settings));
+			}
+
+			function loadSettings() {
+				const settings = JSON.parse(localStorage.getItem('widgetSettings'));
+
+				if (settings) {
+					document.getElementById('textColorPicker').value = settings.textColor;
+					document.getElementById('highlightColorPicker').value = settings.highlightColor;
+					document.getElementById('tableBgColorPicker').value = settings.tableBgColor;
+					document.getElementById('tableTextColorPicker').value = settings.tableTextColor;
+
+					updateCSSVariables();
+				}
+			}
+
+            function updateCSSVariables() {
+                const root = document.documentElement;
+                root.style.setProperty('--text-color', document.getElementById('textColorPicker').value);
+                root.style.setProperty('--highlight-color', document.getElementById('highlightColorPicker').value);
+                root.style.setProperty('--table-bg-color', document.getElementById('tableBgColorPicker').value);
+                root.style.setProperty('--table-text-color', document.getElementById('tableTextColorPicker').value);
+            }
+
+		function savePage() {
+			saveSettings(); 
+			
+			function hideElements() {
+				document.querySelectorAll('.color-picker, #saveSettingsButton, #loadSettingsButton, #savePageButton, #searchButton, #tournamentSelect, #playerNameInput, .support-section').forEach(el => el.classList.add('hidden'));
+			}
+
+			function showElements() {
+				document.querySelectorAll('.color-picker, #saveSettingsButton, #loadSettingsButton, #savePageButton, #searchButton, #tournamentSelect, #playerNameInput, .support-section').forEach(el => el.classList.remove('hidden'));
+			}
+
+			hideElements();
+
+			const root = document.documentElement;
+			const currentStyles = `
+				:root {
+					--background-color: ${getComputedStyle(root).getPropertyValue('--background-color')};
+					--text-color: ${getComputedStyle(root).getPropertyValue('--text-color')};
+					--highlight-color: ${getComputedStyle(root).getPropertyValue('--highlight-color')};
+					--table-bg-color: ${getComputedStyle(root).getPropertyValue('--table-bg-color')};
+					--table-border-color: ${getComputedStyle(root).getPropertyValue('--table-border-color')};
+					--label-color: ${getComputedStyle(root).getPropertyValue('--label-color')};
+					--table-text-color: ${getComputedStyle(root).getPropertyValue('--table-text-color')};
+					--box-shadow-color: ${getComputedStyle(root).getPropertyValue('--box-shadow-color')};
+				}
+			`;
+
+			const dynamicStyles = document.getElementById('dynamic-styles').innerHTML;
+			const combinedStyles = `<style>${dynamicStyles}${currentStyles}</style>`;
+
+			const widgetHTML = document.getElementById('widget').outerHTML;
+			const blob = new Blob([`<!DOCTYPE html><html lang="ru"><head><meta charset="UTF-8"><title>Игровой вызов - Результаты игрока</title><link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">${combinedStyles}</head><body>${widgetHTML}</body></html>`], { type: 'text/html' });
+
+			const playerName = document.getElementById('playerNameInput').value.trim();
+			const filename = `widget_${playerName}.html`;
+
+			const url = URL.createObjectURL(blob);
+
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = filename;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+			URL.revokeObjectURL(url);
+
+			showElements();
+		}
+
+			document.getElementById('savePageButton').addEventListener('click', savePage);
+
+            document.getElementById('textColorPicker').addEventListener('input', updateCSSVariables);
+            document.getElementById('highlightColorPicker').addEventListener('input', updateCSSVariables);
+            document.getElementById('tableBgColorPicker').addEventListener('input', updateCSSVariables);
+            document.getElementById('tableTextColorPicker').addEventListener('input', updateCSSVariables);
+            document.getElementById('savePageButton').addEventListener('click', savePage);
+
+            async function loadTournaments() {
+                const selectElement = document.getElementById('tournamentSelect');
+                const url = 'https://challenge.tanki.su/api/v1/tournaments/get-active';
+
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error('Ошибка загрузки данных о турнирах');
+                    }
+
+                    const data = await response.json();
+				let tournaments = data.data;
+
+				
+				const tournament708 = tournaments.find(tournament => tournament.id === 708);
+				tournaments = tournaments.filter(tournament => tournament.id !== 708);
+
+				
+				if (tournament708) {
+					tournaments.unshift(tournament708);
+				}
+
+				tournaments.forEach(tournament => {
+					const option = document.createElement('option');
+					option.value = tournament.id;
+					option.textContent = tournament.name;
+					selectElement.appendChild(option);
+				});
+
+				selectElement.addEventListener('change', function() {
+					const selectedOption = selectElement.options[selectElement.selectedIndex];
+					const selectedTournamentName = selectedOption.textContent;
+				});
+
+				const selectedOption = selectElement.options[selectElement.selectedIndex];
+				const selectedTournamentName = selectedOption.textContent;
+                } catch (error) {
+                    console.error('Произошла ошибка при загрузке турниров:', error);
+                } finally {
+                    document.getElementById('loader').style.display = 'none';
+                    document.getElementById('content').style.display = 'block';
+                }
+            }
+
+            async function fetchPlayerId(tournamentId, playerName) {
+                const url = `https://challenge.tanki.su/api/v1/tournaments/${tournamentId}/autocomplete?search=${playerName}`;
+
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error('Ошибка поиска игрока');
+                    }
+
+                    const data = await response.json();
+                    const player = data.data.search_results[0];
+
+                    if (player) {
+						document.querySelectorAll('.hidden').forEach(el => el.classList.remove('hidden'));
+                        return player.spa_id;
+                    } else {
+                        throw new Error('Игрок не найден');
+                    }
+                } catch (error) {
+                    console.error('Ошибка поиска игрока:', error);
+                    document.getElementById('error').textContent = 'Игрок не найден';
+                    return null;
+                }
+            }
+
+            async function fetchPlayerPosition(tournamentId, playerId) {
+                const positionUrl = `https://challenge.tanki.su/api/v1/tournaments/${tournamentId}/player/${playerId}?sortby=rating`;
+
+                try {
+                    const response = await fetch(positionUrl);
+
+                    if (!response.ok) {
+                        throw new Error('Данных нет, скорее всего закончился турнир и можно убрать виджет из обс' + response.statusText);
+                    }
+
+                    const responseData = await response.json();
+                    const position = responseData.data;
+
+                    return position;
+                } catch (error) {
+                    console.error('Данных нет, скорее всего закончился турнир и можно убрать виджет из обс', error);
+                    return null;
+                }
+            }
+
+            async function fetchPlayerData(tournamentId, playerId) {
+                const position = await fetchPlayerPosition(tournamentId, playerId);
+                if (position === null) {
+                    console.error('Ошибка получения данных игрока');
+                    return;
+                }
+
+                const offset = position - 1;
+                const url = `https://challenge.tanki.su/api/v1/tournaments/${tournamentId}?offset=${offset}&limit=1&lang=ru&column=rating`;
+
+                try {
+                    const response = await fetch(url);
+
+                    if (!response.ok) {
+                        throw new Error('Данных нет, скорее всего закончился турнир и можно убрать виджет из обс' + response.statusText);
+                    }
+
+                    const responseData = await response.json();
+                    let players = responseData.data.participants;
+
+                    if (players && Array.isArray(players)) {
+                        const player = players.find(player => player.user.spa_id === playerId);
+
+                        if (player) {
+                            const playerData = document.getElementById('playerData');
+                            playerData.innerHTML = '';
+
+                            const createPlayerDataItem = (label, value) => {
+                                const div = document.createElement('div');
+                                div.className = 'player-data-item';
+                                div.innerHTML = `<span class="label">${label}:</span> <span class="highlight" style="font-size: 16px;">${value}</span>`;
+                                return div;
+                            };
+
+                            const createExperienceList = (experienceHistory) => {
+                                const experienceContainer = document.createElement('div');
+                                experienceContainer.className = 'experience-container';
+                                experienceHistory.slice(0, 15).forEach((exp, index) => {
+                                    const expItem = document.createElement('div');
+                                    expItem.className = 'experience-item';
+                                    expItem.textContent = `${index + 1}. ${exp}`;
+                                    experienceContainer.appendChild(expItem);
+                                });
+                                return experienceContainer;
+                            };
+
+                            const PersentData = document.createElement('div');
+							
+                            const minExperience = Math.min(...player.results.history.slice(0, 15));
+                            const maxExperience = Math.max(...player.results.history.slice(0, 15));
+							
+							const displayMinExperience = minExperience === Infinity || minExperience === -Infinity ? 0 : minExperience;
+							const displayMaxExperience = maxExperience === Infinity || maxExperience === -Infinity ? 0 : maxExperience;
+
+                            const leftData = document.createElement('div');
+                            leftData.className = 'player-data';
+                            leftData.appendChild(createPlayerDataItem('Место', player.position));
+                            leftData.appendChild(createPlayerDataItem('Бои', player.results.battles));
+
+                            const rightData = document.createElement('div');
+                            rightData.className = 'player-data';
+							rightData.appendChild(createPlayerDataItem('Мин', displayMinExperience));
+							rightData.appendChild(createPlayerDataItem('Макс', displayMaxExperience));
+
+                            const MiddleData = document.createElement('div');
+                            MiddleData.appendChild(createPlayerDataItem('Сумма', player.results.total));
+
+                            const experienceData = createExperienceList(player.results.history.sort((a, b) => b - a));
+
+                            playerData.appendChild(leftData);
+                            playerData.appendChild(PersentData);
+                            playerData.appendChild(MiddleData);
+                            playerData.appendChild(experienceData);
+                            playerData.appendChild(rightData);
+                        } else {
+                            alert('Игрок не найден');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Проблема с загрузкой данных:', error);
+                } finally {
+                    document.getElementById('loader').style.display = 'none';
+                    document.getElementById('content').style.display = 'block';
+                }
+            }
+
+            const tournamentSelect = document.getElementById('tournamentSelect');
+            const searchButton = document.getElementById('searchButton');
+
+            searchButton.addEventListener('click', async () => {
+			const playerName = document.getElementById('playerNameInput').value.trim();
+			const selectedTournamentId = tournamentSelect.value;
+
+			if (!playerName) {
+				document.getElementById('error').textContent = 'Введите имя игрока';
+				return;
+			}
+
+			document.getElementById('error').textContent = '';
+
+			try {
+				const playerId = await fetchPlayerId(selectedTournamentId, playerName);
+
+				if (playerId) {
+					await fetchPlayerData(selectedTournamentId, playerId);
+				}
+			} catch (error) {
+				console.error('Ошибка поиска игрока:', error);
+			}
+		});
+
+            loadTournaments();
+            loadSettings();
+        </script>
+    </div>
+</body>
+</html>
+
